@@ -219,11 +219,30 @@ jobs:
             sudo docker pull "$IMAGE_URI"
             
             # ================================================================
-            # Step 4: Stop and remove existing container
+            # Step 4: Stop and remove existing container + free port 80
             # ================================================================
-            echo "🛑 Stopping existing container..."
+            echo "🛑 Stopping existing containers..."
             sudo docker stop pitalrecord-web 2>/dev/null || true
             sudo docker rm pitalrecord-web 2>/dev/null || true
+            
+            # Stop ANY container using port 80
+            echo "🔍 Checking for containers using port 80..."
+            PORT_80_CONTAINER=$(sudo docker ps --filter "publish=80" -q 2>/dev/null || true)
+            if [ -n "$PORT_80_CONTAINER" ]; then
+              echo "⚠️ Found container using port 80: $PORT_80_CONTAINER"
+              sudo docker stop $PORT_80_CONTAINER 2>/dev/null || true
+              sudo docker rm $PORT_80_CONTAINER 2>/dev/null || true
+            fi
+            
+            # Kill any process using port 80 (nginx, apache, etc.)
+            echo "🔍 Checking for processes using port 80..."
+            sudo fuser -k 80/tcp 2>/dev/null || true
+            
+            # Stop nginx if running
+            sudo systemctl stop nginx 2>/dev/null || true
+            
+            # Wait a moment for port to be released
+            sleep 2
             
             # ================================================================
             # Step 5: Run new container
