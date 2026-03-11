@@ -36,6 +36,16 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          echo "DEBUG: ECR_REGISTRY=$ECR_REGISTRY"
+          echo "DEBUG: ECR_REPOSITORY=$ECR_REPOSITORY"
+          echo "DEBUG: IMAGE_TAG=$IMAGE_TAG"
+          echo "DEBUG: Full image name will be: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          
+          if [ -z "$ECR_REPOSITORY" ]; then
+            echo "ERROR: ECR_REPOSITORY is empty!"
+            exit 1
+          fi
+          
           docker build \
             --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
@@ -43,6 +53,7 @@ jobs:
             -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
             -f Dockerfile .
           
+          echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
       
