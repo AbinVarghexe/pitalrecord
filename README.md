@@ -84,7 +84,30 @@ pitalrecord/
 - Supabase account
 - AWS account (for deployment)
 
-### Installation
+### Quick Setup (Automated) ⚡
+
+We provide an **interactive setup wizard** that automatically collects all credentials and configures everything for you!
+
+**Windows:**
+```powershell
+.\scripts\setup-credentials.ps1
+```
+
+**Linux/macOS:**
+```bash
+chmod +x ./scripts/setup-credentials.sh
+./scripts/setup-credentials.sh
+```
+
+The wizard will:
+- ✅ Prompt for all 9 required credentials
+- ✅ Create `.env` files automatically
+- ✅ Add GitHub secrets (if GitHub CLI installed)
+- ✅ Validate and confirm your configuration
+
+📖 **[See Complete Setup Guide →](./SETUP.md)**
+
+### Manual Installation
 
 1. **Clone the repository:**
    ```bash
@@ -162,6 +185,26 @@ pnpm format
 
 ## 🐳 Deployment
 
+### Quick Start: Automated Credentials Setup ⚡
+
+Before deploying, run the automated setup wizard to configure all credentials:
+
+```powershell
+# Windows
+.\scripts\setup-credentials.ps1
+
+# Linux/macOS
+./scripts/setup-credentials.sh
+```
+
+This will automatically:
+- Collect all 9 required AWS and Supabase credentials
+- Create `.env` files
+- Add GitHub repository secrets
+- Validate your configuration
+
+📖 **[Complete Setup Guide →](./SETUP.md)**
+
 ### Local Docker Testing
 
 1. **Build and run with Docker Compose:**
@@ -182,6 +225,11 @@ The project includes automated deployment to AWS EC2 using GitHub Actions.
 - EC2 instance (t3.small or larger)
 - ECR repository
 - GitHub repository with required secrets
+
+**Quick Deploy:**
+1. Run setup wizard: `.\scripts\setup-credentials.ps1`
+2. Setup EC2: SSH and run `./scripts/setup-ec2.sh`
+3. Deploy: `git push origin master`
 
 **Detailed deployment guide:** See [AWS Deployment Guide](./docs/AWS_DEPLOYMENT_GUIDE.md)
 
@@ -261,12 +309,21 @@ AWS MCP servers allow you to:
 
 ## 📚 Documentation
 
+### Quick Start
+- 🚀 **[Automated Setup Guide](./SETUP.md)** - Interactive credential setup wizard (START HERE!)
+- � [Credentials Guide](./docs/CREDENTIALS_GUIDE.md) - Complete credential reference with diagrams
+- �📋 [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Manual credential collection
+
+### Deployment Guides
 - [AWS Deployment Guide](./docs/AWS_DEPLOYMENT_GUIDE.md) - Complete AWS deployment walkthrough
+- [Command Reference](./docs/COMMAND_REFERENCE.md) - Quick command lookup
+
+### AI-Powered Development
 - [AWS MCP Integration](./docs/AWS_MCP_INTEGRATION.md) - AI-powered AWS management
 - [MCP Setup Guide](./docs/MCP_SETUP_README.md) - MCP configuration examples
-- [Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Pre-deployment verification
 - [MCP Servers Guide](./docs/MCP_SERVERS_GUIDE.md) - Understanding MCP architecture
-- [Command Reference](./docs/COMMAND_REFERENCE.md) - Quick command lookup
+
+### Authentication
 - [Supabase Setup](./apps/web/SUPABASE_SETUP.md) - Authentication configuration
 - [Auth Guide](./apps/web/AUTH_GUIDE.md) - Authentication implementation
 
