@@ -250,9 +250,13 @@ git push origin main
 GitHub Actions will automatically:
 1. Build the Docker image
 2. Push to ECR
-3. Deploy to EC2
-4. Restart containers
-5. Verify deployment
+3. Connect to EC2 over SSH
+4. Update the server packages
+5. Install or repair deployment requirements (Docker, Compose, AWS CLI)
+6. Pull and restart containers
+7. Verify deployment health
+
+The workflow uses `scripts/remote-deploy.sh` on EC2 for idempotent provisioning and deployment.
 
 ### Manual Deployment
 
@@ -261,15 +265,23 @@ If needed, you can deploy manually on EC2:
 ```bash
 cd ~/pitalrecord
 
+# Set deployment image and environment values
+cat > .env.production << 'EOF'
+IMAGE_URI=YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/pitalrecord-web:latest
+NODE_ENV=production
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EOF
+
 # Pull latest image
-docker-compose pull
+docker compose --env-file .env.production pull
 
 # Restart services
-docker-compose down
-docker-compose up -d
+docker compose --env-file .env.production down
+docker compose --env-file .env.production up -d
 
 # Check logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Monitoring
