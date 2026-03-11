@@ -1,8 +1,29 @@
 'use client'
 
+import { cn } from "@workspace/ui/lib/utils"
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+
+const MaskingTape = ({ className, rotate }: { className?: string, rotate?: string }) => (
+  <div 
+    className={cn(
+      "absolute w-60 h-16 bg-[#e5d9b6]/70 backdrop-blur-[1.5px] z-50 pointer-events-none overflow-hidden",
+      className
+    )}
+    style={{ 
+      transform: `rotate(${rotate})`,
+      clipPath: "polygon(0% 10%, 4% 0%, 10% 8%, 15% 0%, 22% 10%, 28% 2%, 35% 12%, 42% 4%, 50% 15%, 58% 6%, 65% 14%, 72% 3%, 80% 12%, 88% 1%, 95% 9%, 100% 0%, 100% 90%, 96% 100%, 90% 92%, 84% 100%, 78% 90%, 70% 100%, 62% 91%, 55% 100%, 48% 89%, 40% 100%, 32% 92%, 25% 100%, 18% 90%, 10% 100%, 5% 91%, 0% 100%)",
+      boxShadow: "inset 0 0 20px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.08)"
+    }}
+  >
+    {/* Tape Texture */}
+    <div 
+      className="absolute inset-0 opacity-[0.2] mix-blend-multiply"
+      style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")' }}
+    />
+  </div>
+)
 
 export default function AuthLayout({
   children,
@@ -21,6 +42,22 @@ export default function AuthLayout({
         className="absolute inset-0 pointer-events-none opacity-40 mix-blend-multiply"
         style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cream-paper.png")' }}
       />
+
+      {/* Masking Tape Illusion Elements */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+        <div className="relative w-full max-w-[1140px] md:h-[740px]">
+          {/* Top Left Tape - Crossing the corner diagonally */}
+          <MaskingTape 
+            className="-top-12 -left-16" 
+            rotate="-45deg" 
+          />
+          {/* Bottom Right Tape - Crossing the corner diagonally */}
+          <MaskingTape 
+            className="-bottom-12 -right-16 opacity-90" 
+            rotate="-45deg" 
+          />
+        </div>
+      </div>
 
       {/* Centered Paper Card */}
       <motion.div 
@@ -88,7 +125,7 @@ export default function AuthLayout({
             />
             
             {/* Dark Bottom Gradient for Text Readability */}
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/60 via-black/20 to-transparent z-10" />
             
             {/* Subtle Overlay Content */}
             <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center justify-end p-10 text-center pointer-events-none">
