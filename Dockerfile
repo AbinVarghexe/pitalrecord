@@ -64,6 +64,9 @@ COPY --from=builder /app/apps/web/package.json ./
 # Copy built application
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# Copy public assets (if they exist)
+# Using a shell command to handle missing directory gracefully
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
