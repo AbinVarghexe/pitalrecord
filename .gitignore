@@ -34,3 +34,18 @@ npm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# AWS & Deployment
+.aws/
+private_key.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

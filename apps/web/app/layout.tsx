@@ -1,11 +1,12 @@
-import { Geist, Geist_Mono, Roboto } from "next/font/google"
+import { Geist_Mono, Playfair_Display, Inter } from "next/font/google"
 
 import "@workspace/ui/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
 import { cn } from "@workspace/ui/lib/utils";
 
-const roboto = Roboto({subsets:['latin'],variable:'--font-sans'})
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-serif' })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", roboto.variable)}
+      className={cn("antialiased", fontMono.variable, inter.variable, playfair.variable)}
     >
       <body>
         <ThemeProvider>
