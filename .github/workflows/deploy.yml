@@ -28,7 +28,7 @@ jobs:
         
       - name: Build and push Docker image to GHCR
         env:
-          IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/pitalrecord
+          IMAGE_NAME: ghcr.io/abinvarghexe/pitalrecord
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "Building and pushing to GitHub Container Registry..."
@@ -54,7 +54,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
-          IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/pitalrecord
+          IMAGE_NAME: ghcr.io/abinvarghexe/pitalrecord
           IMAGE_TAG: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
