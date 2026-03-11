@@ -27,6 +27,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         
+      - name: Verify ECR Repository Access
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+        run: |
+          echo "Verifying ECR repository access..."
+          echo "Repository name from secret: '$ECR_REPOSITORY'"
+          echo "Listing ECR repositories:"
+          aws ecr describe-repositories --region ${{ secrets.AWS_REGION }} || echo "Failed to list repositories"
+          echo "Checking specific repository: $ECR_REPOSITORY"
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region ${{ secrets.AWS_REGION }} || echo "Repository not found or no access"
+        
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
