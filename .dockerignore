@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs (except standalone)
+.next
+!apps/web/.next/standalone
+!apps/web/.next/static
+out
+dist
+build
+
+# Development files
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Scripts (not needed in container)
+scripts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo
+
+# Docker files (avoid recursion)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Misc
+*.tgz
+*.tar.gz

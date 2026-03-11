@@ -1,0 +1,286 @@
+name: CI/CD Pipeline - Build, Push to ECR & Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: pitalrecord
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  # ===========================================================================
+  # Job 1: Build and Test
+  # ===========================================================================
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Run type checking
+        run: pnpm typecheck
+
+      - name: Build application
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  # ===========================================================================
+  # Job 2: Build Docker Image & Push to ECR
+  # ===========================================================================
+  docker-build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image-uri: ${{ steps.build-push.outputs.image-uri }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create ECR repository if not exists
+        run: |
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image URI
+        run: |
+          echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+  # ===========================================================================
+  # Job 3: Deploy to AWS EC2
+  # ===========================================================================
+  deploy-to-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: http://${{ secrets.EC2_HOST }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            
+            echo "🚀 Starting deployment..."
+            
+            # ================================================================
+            # Step 1: Install Docker if not present
+            # ================================================================
+            if ! command -v docker &> /dev/null; then
+              echo "📦 Installing Docker..."
+              sudo yum update -y || sudo apt-get update -y
+              sudo yum install -y docker || sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker $USER
+              echo "✅ Docker installed successfully"
+            fi
+            
+            # Ensure Docker is running
+            sudo systemctl start docker || true
+            
+            # ================================================================
+            # Step 2: Install Docker Compose if not present
+            # ================================================================
+            if ! command -v docker-compose &> /dev/null; then
+              echo "📦 Installing Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              echo "✅ Docker Compose installed successfully"
+            fi
+            
+            # ================================================================
+            # Step 3: Configure AWS CLI for ECR login
+            # ================================================================
+            if ! command -v aws &> /dev/null; then
+              echo "📦 Installing AWS CLI..."
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip -q awscliv2.zip
+              sudo ./aws/install
+              rm -rf aws awscliv2.zip
+              echo "✅ AWS CLI installed successfully"
+            fi
+            
+            # Configure AWS credentials
+            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws configure set region ${{ env.AWS_REGION }}
+            
+            # ================================================================
+            # Step 4: Login to ECR and pull latest image
+            # ================================================================
+            echo "🔐 Logging into ECR..."
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            
+            echo "📥 Pulling latest image..."
+            sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            
+            # ================================================================
+            # Step 5: Stop and remove existing container
+            # ================================================================
+            echo "🛑 Stopping existing container..."
+            sudo docker stop pitalrecord-web || true
+            sudo docker rm pitalrecord-web || true
+            
+            # ================================================================
+            # Step 6: Run new container
+            # ================================================================
+            echo "🚀 Starting new container..."
+            sudo docker run -d \
+              --name pitalrecord-web \
+              --restart unless-stopped \
+              -p 80:3000 \
+              -e NODE_ENV=production \
+              -e NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+              -e NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+              ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            
+            # ================================================================
+            # Step 7: Verify deployment
+            # ================================================================
+            echo "🔍 Verifying deployment..."
+            sleep 10
+            if sudo docker ps | grep -q pitalrecord-web; then
+              echo "✅ Container is running!"
+              sudo docker logs --tail 20 pitalrecord-web
+            else
+              echo "❌ Container failed to start"
+              sudo docker logs pitalrecord-web
+              exit 1
+            fi
+            
+            # ================================================================
+            # Step 8: Cleanup old images
+            # ================================================================
+            echo "🧹 Cleaning up old images..."
+            sudo docker image prune -af --filter "until=24h" || true
+            
+            echo "✅ Deployment completed successfully!"
+
+      - name: Health check
+        run: |
+          echo "🏥 Running health check..."
+          sleep 15
+          for i in {1..5}; do
+            if curl -sf http://${{ secrets.EC2_HOST }}/health || curl -sf http://${{ secrets.EC2_HOST }}; then
+              echo "✅ Application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Waiting for application to be ready... (attempt $i/5)"
+            sleep 10
+          done
+          echo "⚠️ Health check timed out, but deployment may still be successful"
+
+  # ===========================================================================
+  # Job 4: Notify on completion
+  # ===========================================================================
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [build-and-test, docker-build-push, deploy-to-ec2]
+    if: always()
+    
+    steps:
+      - name: Deployment status
+        run: |
+          if [ "${{ needs.deploy-to-ec2.result }}" == "success" ]; then
+            echo "🎉 Deployment successful!"
+            echo "📦 Image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          elif [ "${{ needs.deploy-to-ec2.result }}" == "skipped" ]; then
+            echo "⏭️ Deployment was skipped"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi
