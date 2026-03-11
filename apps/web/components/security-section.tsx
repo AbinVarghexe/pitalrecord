@@ -8,10 +8,10 @@ export function SecuritySection() {
   const [auditLogsEnabled, setAuditLogsEnabled] = useState(true)
 
   return (
-    <section id="security" className="relative w-full py-24 sm:py-32 overflow-hidden selection:bg-black/5">
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="security" className="relative w-full py-16 md:py-24 overflow-hidden selection:bg-black/5">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 md:px-12">
         {/* Header Layout (Apple-inspired) */}
-        <div className="flex flex-col gap-8 mb-16 px-4">
+        <div className="flex flex-col gap-6 md:gap-8 mb-10 md:mb-16">
           <div className="flex flex-col gap-6">
             {/* Apple-style minimalist pill (matches previous sessions) */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/50 backdrop-blur-md border border-blue-100/50 w-fit text-blue-600">

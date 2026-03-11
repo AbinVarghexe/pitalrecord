@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { GoogleSignInButton } from '@/components/google-sign-in-button'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
@@ -11,96 +12,125 @@ export default function RegisterPage() {
   const [state, formAction, pending] = useActionState(registerWithEmail, null)
 
   return (
-    <div className="flex flex-col">
-      <div className="text-center mb-10">
-        <h1 className="text-[28px] md:text-[32px] font-semibold tracking-tight text-[#1d1d1f] mb-3">
-          Create Your ID
+    <motion.div 
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col"
+    >
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tighter text-slate-900 mb-1.5">
+          Create Account
         </h1>
-        <p className="text-[15px] text-[#86868b] font-medium">
-          One account for everything PTIALRECORD.
+        <p className="text-[14px] text-slate-400 font-medium leading-relaxed">
+          Start your clinical journey with PITALRECORD.
         </p>
       </div>
       
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
          <form action={formAction} className="flex flex-col gap-4">
            {state?.error && (
-             <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
-               {state.error}
-             </div>
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.98 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-[12px] font-bold"
+             >
+               Error: {state.error}
+             </motion.div>
            )}
-           {/* Name row */}
-           <div className="flex gap-4">
-             <div className="flex-1">
+
+           <div className="space-y-3.5">
+             {/* Name Row */}
+             <div className="flex gap-4">
+               <div className="flex-1 space-y-1.5">
+                 <label htmlFor="firstName" className="text-[13px] font-bold text-slate-700 ml-1">
+                   First Name
+                 </label>
+                 <Input 
+                   id="firstName"
+                   name="firstName" 
+                   type="text" 
+                   placeholder="Jane" 
+                   className="h-10.5 block w-full rounded-2xl border-none bg-slate-50/80 focus:bg-white focus:ring-4 focus:ring-blue-500/10 sm:text-[14px] px-4 transition-all placeholder:text-slate-300" 
+                   required 
+                 />
+               </div>
+               <div className="flex-1 space-y-1.5">
+                 <label htmlFor="lastName" className="text-[13px] font-bold text-slate-700 ml-1">
+                   Last Name
+                 </label>
+                 <Input 
+                   id="lastName"
+                   name="lastName" 
+                   type="text" 
+                   placeholder="Doe" 
+                   className="h-10.5 block w-full rounded-2xl border-none bg-slate-50/80 focus:bg-white focus:ring-4 focus:ring-blue-500/10 sm:text-[14px] px-4 transition-all placeholder:text-slate-300" 
+                   required 
+                 />
+               </div>
+             </div>
+
+             <div className="space-y-1.5">
+               <label htmlFor="email" className="text-[13px] font-bold text-slate-700 ml-1">
+                 Email Address
+               </label>
                <Input 
-                 id="firstName"
-                 name="firstName" 
-                 type="text" 
-                 placeholder="First Name" 
-                 className="h-14 block w-full rounded-2xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-base px-4 bg-white/50" 
+                 id="email"
+                 name="email" 
+                 type="email" 
+                 placeholder="jane@clinical.com" 
+                 className="h-10.5 block w-full rounded-2xl border-none bg-slate-50/80 focus:bg-white focus:ring-4 focus:ring-blue-500/10 sm:text-[14px] px-4 transition-all placeholder:text-slate-300" 
                  required 
                />
              </div>
-             <div className="flex-1">
+
+             <div className="space-y-1.5">
+               <label htmlFor="password" className="text-[13px] font-bold text-slate-700 ml-1">
+                 Password
+               </label>
                <Input 
-                 id="lastName"
-                 name="lastName" 
-                 type="text" 
-                 placeholder="Last Name" 
-                 className="h-14 block w-full rounded-2xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-base px-4 bg-white/50" 
+                 id="password"
+                 name="password" 
+                 type="password" 
+                 placeholder="••••••••" 
+                 className="h-10.5 block w-full rounded-2xl border-none bg-slate-50/80 focus:bg-white focus:ring-4 focus:ring-blue-500/10 sm:text-[14px] px-4 transition-all placeholder:text-slate-300" 
                  required 
                />
              </div>
            </div>
 
-           {/* Account Details row */}
-           <div className="flex flex-col gap-4 mt-2">
-             <Input 
-               id="email"
-               name="email" 
-               type="email" 
-               placeholder="name@example.com" 
-               className="h-14 block w-full rounded-2xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-base px-4 bg-white/50" 
-               required 
-             />
-             <Input 
-               id="password"
-               name="password" 
-               type="password" 
-               placeholder="Password" 
-               className="h-14 block w-full rounded-2xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-base px-4 bg-white/50" 
-               required 
-             />
-           </div>
-
-           <Button type="submit" disabled={pending} className="w-full h-12 rounded-full mt-4 text-base font-medium shadow-sm active:scale-[0.98] transition-all bg-[#007aff] hover:bg-[#0071e3] text-white border-0 disabled:opacity-70 disabled:cursor-not-allowed">
-             {pending ? 'Creating ID...' : 'Continue'}
+           <Button 
+             type="submit" 
+             disabled={pending} 
+             className="w-full h-11 rounded-2xl bg-slate-900 text-white font-bold text-[15px] transition-all hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 border-none shadow-xl shadow-slate-900/10"
+           >
+             {pending ? "Processing..." : "Create an account"}
            </Button>
          </form>
 
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-3 bg-[#f5f5f7] text-[#86868b]">Or continue with</span>
-          </div>
+        <div className="relative my-1 flex items-center gap-4 px-2">
+          <div className="grow h-px bg-slate-100" />
+          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">or</span>
+          <div className="grow h-px bg-slate-100" />
         </div>
 
-        <GoogleSignInButton className="w-full h-12 rounded-full text-base font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all" />
+        <GoogleSignInButton className="w-full h-11 rounded-2xl border border-slate-100 bg-white text-slate-700 font-bold text-[14px] hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-[0.98] shadow-sm" />
 
-        <div className="mt-8 text-center text-[13px] text-[#86868b] px-4">
-          By continuing, you agree to the PTIALRECORD Terms of Service and Privacy Policy.
+        <div className="mt-6 text-center px-4">
+          <p className="text-[12px] text-slate-400 font-medium leading-relaxed">
+            By joining, you agree to our <Link href="#" className="font-bold text-slate-800 hover:underline">Terms</Link> and <Link href="#" className="font-bold text-slate-800 hover:underline">Privacy Policy</Link>.
+          </p>
         </div>
         
         <div className="mt-4 text-center">
-          <p className="text-[14px] text-[#86868b]">
-            Already have an ID?{' '}
-            <Link href="/login" className="font-medium text-blue-600 hover:underline">
-              Sign in.
+          <p className="text-[14px] text-slate-400 font-medium">
+            Already a member?{' '}
+            <Link href="/login" className="font-bold text-slate-900 hover:underline underline-offset-4">
+              Sign in here
             </Link>
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

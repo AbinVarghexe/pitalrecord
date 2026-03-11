@@ -23,7 +23,7 @@ export function MarketingFooter() {
   ]
 
   return (
-    <footer className="relative w-full text-black pt-24 pb-12 overflow-hidden selection:bg-black/5" style={{ backgroundColor: '#fcfbf8' }}>
+    <footer className="relative w-full text-black pt-16 md:pt-24 pb-12 overflow-hidden selection:bg-black/5" style={{ backgroundColor: '#fcfbf8' }}>
       {/* Background Paper Texture (Intensified) */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-40 mix-blend-multiply"
@@ -63,8 +63,8 @@ export function MarketingFooter() {
       </div>
 
       {/* Top CTA Section */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-32 pt-12">
-        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-10 leading-[1.1] text-slate-900 font-serif italic italic-none">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 md:px-12 text-center mb-16 md:mb-24 pt-4 md:pt-8">
+        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-8 md:mb-10 leading-[1.1] text-slate-900 font-serif italic italic-none">
           Ready to Turn Complexity <br className="hidden sm:block" />
           into Clarity?
         </h2>

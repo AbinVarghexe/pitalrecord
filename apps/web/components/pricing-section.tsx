@@ -39,10 +39,10 @@ export function PricingSection() {
   ]
 
   return (
-    <section id="pricing" className="w-full py-24 sm:py-32 relative z-10 flex flex-col items-center justify-center px-4 sm:px-8 font-sans selection:bg-black/5">
+    <section id="pricing" className="w-full py-16 md:py-24 relative z-10 flex flex-col items-center justify-center font-sans selection:bg-black/5">
       
       {/* Newspaper Style Heading (Matches Security/How it works) */}
-      <div className="w-full max-w-7xl px-8 sm:px-16 md:px-24 mb-20 text-center">
+      <div className="w-full max-w-7xl px-6 sm:px-8 md:px-12 mb-10 md:mb-16 text-center">
         <div className="flex flex-col items-center gap-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/50 backdrop-blur-md border border-blue-100/50 w-fit text-blue-600">
             <span className="text-[13px] font-medium tracking-tight">Pricing</span>
@@ -58,12 +58,12 @@ export function PricingSection() {
         </div>
       </div>
 
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-wrap justify-center gap-12 lg:gap-16">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-12 flex flex-wrap justify-center gap-8 md:gap-12 lg:gap-16">
         {tiers.map((tier) => (
           <div
             key={tier.id}
             className={cn(
-              "relative w-full max-w-[420px] transition-all duration-500 hover:scale-[1.02] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.15)] flex flex-col p-10 sm:p-12 min-h-[600px]",
+              "relative w-full max-w-[420px] transition-all duration-500 hover:scale-[1.02] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.15)] flex flex-col p-8 sm:p-12 min-h-[600px]",
               tier.mostPopular && "ring-1 ring-slate-200"
             )}
             style={{ 
@@ -140,8 +140,8 @@ export function PricingSection() {
 
             {/* Barcode & Action */}
             <div className="flex flex-col items-center gap-6">
-              <div className="flex flex-col items-center gap-2 opacity-60">
-                <svg width="220" height="40" viewBox="0 0 220 40" className="text-slate-900">
+              <div className="flex flex-col items-center gap-2 opacity-60 w-full overflow-hidden">
+                <svg width="100%" height="40" viewBox="0 0 220 40" preserveAspectRatio="xMidYMid meet" className="text-slate-900 max-w-[220px]">
                   <rect x="0" width="2" height="40" fill="currentColor" />
                   <rect x="4" width="1" height="40" fill="currentColor" />
                   <rect x="8" width="3" height="40" fill="currentColor" />

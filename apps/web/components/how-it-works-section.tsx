@@ -2,17 +2,17 @@ import { cn } from "@workspace/ui/lib/utils"
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="w-full py-16 sm:py-24 relative z-10 flex flex-col items-center justify-center px-4 sm:px-8 mt-16 md:mt-24 font-sans">
+    <section id="how-it-works" className="w-full py-16 md:py-24 relative z-10 flex flex-col items-center justify-center font-sans">
       
       {/* Small Plain Italic Heading */}
-      <div className="w-full max-w-[1400px] mb-8 px-8 sm:px-16 md:px-24">
+      <div className="w-full max-w-[1400px] mb-8 md:mb-10 px-6 sm:px-8 md:px-12">
         <h3 className="text-lg sm:text-xl italic text-slate-500 tracking-wide">
           How it works
         </h3>
       </div>
 
       <div 
-        className="w-full max-w-[1400px] overflow-hidden px-8 sm:px-16 md:px-24 mb-16 relative isolate"
+        className="w-full max-w-[1400px] overflow-hidden px-6 sm:px-8 md:px-12 mb-10 md:mb-16 relative isolate"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10 w-full">
           

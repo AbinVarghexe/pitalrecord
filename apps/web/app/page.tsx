@@ -27,8 +27,8 @@ export default function Page() {
         <MarketingNavbar />
 
         {/* Hero Section */}
-        <main className="relative pt-[120px] flex flex-col items-center justify-center px-4 sm:px-8 z-10 min-h-[calc(100vh-80px)]">
-          <div className="relative w-full max-w-[1600px] min-h-[90vh] rounded-t-[16px] md:rounded-t-[24px] overflow-hidden flex flex-col items-center justify-center text-center p-8 sm:p-12 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)] isolate">
+        <main className="relative pt-[80px] md:pt-[120px] flex flex-col items-center justify-center px-4 sm:px-8 z-10 min-h-[calc(100vh-80px)]">
+          <div className="relative w-full max-w-[1400px] min-h-[85vh] md:min-h-[90vh] rounded-t-[16px] md:rounded-t-[24px] overflow-hidden flex flex-col items-center justify-center text-center p-6 sm:p-12 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)] isolate">
             {/* Background Image inside the Card with Bottom Fade */}
             <div 
               className="absolute inset-0 bg-cover bg-center z-0 transition-transform duration-[2s] hover:scale-105"
@@ -48,15 +48,15 @@ export default function Page() {
             />
             
             {/* Content overlaid on image */}
-            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center p-8 sm:p-12">
+            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center p-6 sm:p-12">
               
               {/* Centered Hero Content */}
-              <div className="pointer-events-auto flex flex-col items-center max-w-5xl mx-auto relative -top-[100px]">
+              <div className="pointer-events-auto flex flex-col items-center max-w-5xl mx-auto relative -top-12 md:-top-[100px]">
                 <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-bold tracking-tight leading-none text-white/90 drop-shadow-xl mb-4 text-center px-4">
                   <span className="font-sans">Your <span className=''>Medical</span></span><span className="italic font-serif"> History,</span> <br className="hidden sm:block" />
                   <span className="font-sans font-semibold tracking-tighter text-black"><span className="italic font-serif text-white"> Organized.</span> All In One Place.</span>
                 </h1>
-                <p className="text-[18px] sm:text-xl text-gray-200 italic max-w-3xl mx-auto font-medium tracking-tight drop-shadow-md mb-12 leading-tight px-4">
+                <p className="text-[17px] sm:text-xl text-gray-200 italic max-w-3xl mx-auto font-medium tracking-tight drop-shadow-md mb-8 md:mb-12 leading-tight px-4">
                   PTIALRECORD digitizes your prescriptions, extracts medical insights with AI, and gives you full control over who sees your health data.
                 </p>
               </div>
