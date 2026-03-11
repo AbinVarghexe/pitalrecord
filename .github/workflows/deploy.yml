@@ -31,6 +31,9 @@ jobs:
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         run: |
+          echo "Verifying IAM identity..."
+          aws sts get-caller-identity
+          echo "---"
           echo "Verifying ECR repository access..."
           echo "Repository name from secret: '$ECR_REPOSITORY'"
           echo "Listing ECR repositories:"
