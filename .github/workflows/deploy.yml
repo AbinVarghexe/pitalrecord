@@ -1,0 +1,193 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        
+      - name: Build and push Docker image to GHCR
+        env:
+          IMAGE_NAME: ghcr.io/abinvarghexe/pitalrecord
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building and pushing to GitHub Container Registry..."
+          echo "Image: $IMAGE_NAME:$IMAGE_TAG"
+          
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
+            -t $IMAGE_NAME:$IMAGE_TAG \
+            -t $IMAGE_NAME:latest \
+            -f Dockerfile .
+          
+          echo "Pushing images..."
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          docker push $IMAGE_NAME:latest
+          
+          echo "✅ Images pushed successfully!"
+          echo "  - $IMAGE_NAME:$IMAGE_TAG"
+          echo "  - $IMAGE_NAME:latest"
+      
+      - name: Deploy to EC2
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          IMAGE_NAME: ghcr.io/abinvarghexe/pitalrecord
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          # Save private key
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          
+          # Test SSH connection
+          echo "Testing SSH connection..."
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key.pem ${USER}@${HOST} "echo 'SSH connection successful'"
+          
+          # Deploy via SSH
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} \
+            IMAGE_NAME="${IMAGE_NAME}" \
+            GITHUB_TOKEN="${GITHUB_TOKEN}" \
+            GITHUB_ACTOR="${GITHUB_ACTOR}" \
+            bash -s << 'EOF'
+            
+            echo "🚀 Starting deployment..."
+            
+            # Login to GHCR
+            echo "Logging into GitHub Container Registry..."
+            echo "${GITHUB_TOKEN}" | docker login ghcr.io -u ${GITHUB_ACTOR} --password-stdin
+            
+            # Create app directory
+            mkdir -p ~/pitalrecord
+            cd ~/pitalrecord
+            
+            # Pull latest image
+            echo "Pulling image: ${IMAGE_NAME}:latest"
+            docker pull ${IMAGE_NAME}:latest
+            
+            # Stop old containers
+            echo "Stopping old containers..."
+            docker-compose down 2>/dev/null || true
+            
+            # Create docker-compose if not exists
+            if [ ! -f docker-compose.yml ]; then
+              cat > docker-compose.yml << 'COMPOSE'
+version: '3.8'
+
+services:
+  web:
+    image: ${IMAGE_NAME:-ghcr.io/abinvarghexe/pitalrecord:latest}
+    container_name: pitalrecord-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    container_name: pitalrecord-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+COMPOSE
+            fi
+            
+            # Create nginx config if not exists
+            if [ ! -f nginx.conf ]; then
+              cat > nginx.conf << 'NGINX'
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream backend {
+        server web:3000;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        location / {
+            proxy_pass http://backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+NGINX
+            fi
+            
+            # Start containers
+            echo "Starting containers..."
+            export IMAGE_NAME=${IMAGE_NAME}
+            docker-compose up -d --force-recreate
+            
+            # Wait for health check
+            echo "Waiting for application to be healthy..."
+            sleep 10
+            
+            # Clean up old images
+            docker image prune -af --filter "until=24h"
+            
+            echo "✅ Deployment completed successfully!"
+            echo "Application running at http://$(curl -s ifconfig.me)"
+          EOF
+          
+          # Clean up
+          rm -f private_key.pem
+      
+      - name: Verify deployment
+        if: always()
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "Application URL: http://${HOST}"
+          else
+            echo "❌ Deployment failed!"
+          fi
