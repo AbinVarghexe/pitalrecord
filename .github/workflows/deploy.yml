@@ -8,10 +8,6 @@ on:
       - develop  # Add other branches you want to auto-deploy
   workflow_dispatch:  # Allow manual trigger
 
-env:
-  # Docker Hub or AWS ECR configuration
-  DOCKER_IMAGE_NAME: pitalrecord-web
-  
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
