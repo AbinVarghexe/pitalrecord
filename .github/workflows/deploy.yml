@@ -65,27 +65,25 @@ jobs:
           # Deploy via SSH
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} << 'EOF'
             # Login to GitHub Container Registry
-            echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${GITHUB_TOKEN}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Navigate to app directory
             cd /home/${USER}/pitalrecord || exit 1
             
-            # Login to ECR
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            # Pull latest image from GHCR
+            docker pull ${IMAGE_NAME}:latest
             
-            # Pull latest image
-            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-            
-            # Stop and remove old container
+            # Stop and remove old containers
             docker-compose down || true
             
-            # Start new container
-            docker-compose up -d
+            # Update environment and restart
+            export IMAGE_NAME=${IMAGE_NAME}
+            docker-compose up -d --force-recreate
             
             # Clean up old images
             docker image prune -af
             
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completed successfully!"
           EOF
           
           # Clean up private key
