@@ -1,5 +1,6 @@
 import { IconStarFilled } from '@tabler/icons-react'
 import Link from 'next/link'
+import { GoogleSignInButton } from '@/components/google-sign-in-button'
 
 export default function Page() {
   return (
@@ -32,9 +33,7 @@ export default function Page() {
 
           {/* Right Button */}
           <div className="flex items-center">
-            <Link href="#" className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-black/80 transition-all duration-200">
-              Contact
-            </Link>
+            <GoogleSignInButton />
           </div>
         </div>
       </header>

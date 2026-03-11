@@ -84,3 +84,38 @@ export async function revokeDoctorAccessKey(keyId: string) {
   revalidatePath('/dashboard/access')
   return { error: null }
 }
+
+export async function validateDoctorAccessKey(rawKey: string) {
+  const supabase = await createClient()
+  
+  if (!rawKey || rawKey.length < 32) {
+    return { error: 'Invalid access key format', sessionId: null }
+  }
+
+  // Hash the provided key
+  const tokenHash = await hashToken(rawKey)
+
+  // Look for matching, valid key
+  const { data: key, error } = await supabase
+    .from('doctor_access_keys')
+    .select('*')
+    .eq('token_hash', tokenHash)
+    .eq('revoked', false)
+    .gte('expires_at', new Date().toISOString())
+    .single()
+
+  if (error || !key) {
+    return { error: 'Invalid or expired access key', sessionId: null }
+  }
+
+  // Log the access
+  await supabase.from('access_logs').insert({
+    key_id: key.id,
+    action: 'session_started',
+    ip_address: null, // Would need to get from request in middleware
+    user_agent: null
+  })
+
+  // Return the key ID as the session identifier
+  return { error: null, sessionId: key.id }
+}
