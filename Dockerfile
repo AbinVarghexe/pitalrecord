@@ -36,6 +36,9 @@ COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 # Copy source files
 COPY . .
 
+# Re-link workspace dependencies after source copy for deterministic builds
+RUN pnpm install --frozen-lockfile
+
 # Accept build arguments for environment variables
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
