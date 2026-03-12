@@ -10,7 +10,11 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  // Use a relative redirect so it works correctly behind reverse proxies
-  // (avoids http/https protocol mismatches when nginx terminates TLS)
-  return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Use the Host header to construct the correct redirect URL
+  // This avoids the 0.0.0.0 issue when Next.js binds to all interfaces
+  const host = request.headers.get('host') || 'localhost:3000'
+  const protocol = request.headers.get('x-forwarded-proto') || 'http'
+  const redirectUrl = `${protocol}://${host}/dashboard`
+
+  return NextResponse.redirect(redirectUrl)
 }
