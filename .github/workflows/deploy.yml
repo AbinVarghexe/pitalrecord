@@ -25,6 +25,10 @@ env:
   ECR_REPOSITORY: pitalrecord
   IMAGE_TAG: ${{ github.sha }}
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   # ===========================================================================
   # Job 1: Build and Test
