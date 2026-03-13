@@ -13,7 +13,7 @@ export function AppContentCard({
     <div className={`relative w-full h-full bg-white rounded-[32px] md:rounded-[40px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.08)] border border-slate-200/40 overflow-hidden flex flex-col ${className}`}>
       {/* Subtle Paper Texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-multiply z-0"
+        className="absolute inset-0 pointer-events-none opacity-[0.06] mix-blend-multiply z-0"
         style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")' }}
       />
 
@@ -25,7 +25,7 @@ export function AppContentCard({
         }}
       />
 
-      <div className="flex-1 relative z-10 overflow-y-auto scrollbar-none">
+      <div className="flex-1 relative z-10 overflow-y-auto scrollbar-auto">
         {children}
       </div>
 
