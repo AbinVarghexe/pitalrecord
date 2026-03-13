@@ -1,10 +1,10 @@
 import { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
+import { Card, CardContent } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Avatar, AvatarFallback } from '@workspace/ui/components/avatar'
-import { IconTimeline, IconSearch, IconCalendar, IconPill, IconUser, IconStethoscope, IconFileText } from '@tabler/icons-react'
+import { IconTimeline, IconSearch, IconCalendar, IconPill, IconStethoscope, IconFileText } from '@tabler/icons-react'
 import Link from 'next/link'
 import { TimelineSearch } from './timeline-search'
 import type { Prescription, Medicine, FamilyProfile } from '@/lib/supabase/types'
@@ -14,175 +14,144 @@ export const metadata: Metadata = {
   description: 'View and search your medical history',
 }
 
-interface SearchParams {
-  q?: string
-  profile?: string
-  from?: string
-  to?: string
-}
-
-interface PageProps {
-  searchParams: Promise<SearchParams>
-}
+interface SearchParams { q?: string; profile?: string; from?: string; to?: string }
+interface PageProps { searchParams: Promise<SearchParams> }
 
 export default async function TimelinePage({ searchParams }: PageProps) {
   const params = await searchParams
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
 
-  // Get all profiles
   const { data: profiles } = await supabase
-    .from('family_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('name')
+    .from('family_profiles').select('*').eq('user_id', user.id).order('name')
 
-  // Build prescription query
   let query = supabase
     .from('prescriptions')
     .select('*, medicines(*), family_profiles!inner(id, name, user_id)')
     .eq('family_profiles.user_id', user.id)
     .order('visit_date', { ascending: false })
 
-  // Apply filters
-  if (params.profile) {
-    query = query.eq('profile_id', params.profile)
-  }
-  if (params.from) {
-    query = query.gte('visit_date', params.from)
-  }
-  if (params.to) {
-    query = query.lte('visit_date', params.to)
-  }
-  if (params.q) {
-    // Search in doctor name, hospital name, diagnosis, and notes
-    query = query.or(`attending_doctor.ilike.%${params.q}%,hospital_name.ilike.%${params.q}%,diagnosis.ilike.%${params.q}%,raw_text.ilike.%${params.q}%`)
-  }
+  if (params.profile) query = query.eq('profile_id', params.profile)
+  if (params.from)    query = query.gte('visit_date', params.from)
+  if (params.to)      query = query.lte('visit_date', params.to)
+  if (params.q)       query = query.or(`attending_doctor.ilike.%${params.q}%,hospital_name.ilike.%${params.q}%,diagnosis.ilike.%${params.q}%,raw_text.ilike.%${params.q}%`)
 
   const { data: prescriptions } = await query
-
-  // Group prescriptions by year and month for timeline view
-  const groupedPrescriptions = groupByDate(prescriptions || [])
+  const grouped = groupByDate(prescriptions || [])
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <IconTimeline className="h-8 w-8" />
-          Medical Timeline
+    <div className="p-8 md:p-12 space-y-10 max-w-7xl mx-auto">
+      {/* ── Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 w-fit">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-blue-600">History</span>
+        </div>
+        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight leading-none flex items-center gap-3">
+          <IconTimeline className="h-9 w-9 text-blue-600" />
+          Medical <span className="font-serif italic font-medium ml-2">Timeline</span>
         </h1>
-        <p className="text-muted-foreground mt-1">
-          View and search through your medical history
-        </p>
+        <div className="w-12 h-0.5 rounded-full bg-blue-500 opacity-70" />
+        <p className="text-[13px] font-medium text-slate-400">View and search through your complete medical history.</p>
       </div>
 
-      {/* Search & Filter */}
+      {/* ── Search & Filter */}
       <TimelineSearch profiles={profiles || []} searchParams={params} />
 
-      {/* Results Summary */}
+      {/* ── Results badge */}
       {(params.q || params.profile || params.from || params.to) && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <IconSearch className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+          <IconSearch className="h-3.5 w-3.5" />
           Found {prescriptions?.length || 0} records
-          {params.q && <Badge variant="secondary">Search: {params.q}</Badge>}
+          {params.q && <Badge variant="secondary" className="rounded-full text-[10px]">Search: {params.q}</Badge>}
           {params.profile && profiles && (
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="rounded-full text-[10px]">
               Profile: {profiles.find(p => p.id === params.profile)?.name}
             </Badge>
           )}
         </div>
       )}
 
-      {/* Timeline */}
+      {/* ── Timeline */}
       {!prescriptions || prescriptions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <IconFileText className="h-8 w-8 text-muted-foreground" />
+        <Card className="bg-white/60 border-slate-200/40 rounded-[2rem]">
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-5">
+            <div className="w-20 h-20 rounded-[2rem] bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
+              <IconFileText className="h-9 w-9 text-slate-300" />
             </div>
-            <h3 className="font-semibold text-lg mb-1">No Records Found</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              {params.q || params.profile 
-                ? 'Try adjusting your search criteria'
-                : 'Start by uploading your first prescription'
-              }
-            </p>
+            <div className="text-center">
+              <h3 className="font-semibold text-lg text-slate-900">No Records Found</h3>
+              <p className="text-[12px] text-slate-400 font-medium mt-1 max-w-xs">
+                {params.q || params.profile ? 'Try adjusting your search criteria' : 'Start by uploading your first prescription'}
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-8">
-          {Object.entries(groupedPrescriptions).map(([yearMonth, items]) => (
+        <div className="space-y-10">
+          {Object.entries(grouped).map(([yearMonth, items]) => (
             <div key={yearMonth}>
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-2 mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <IconCalendar className="h-5 w-5 text-muted-foreground" />
+              {/* Month Header */}
+              <div className="sticky top-0 z-10 bg-[#fcfbf8]/90 backdrop-blur py-2 mb-6">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                  <IconCalendar className="h-4 w-4" />
                   {yearMonth}
                 </h2>
               </div>
-              <div className="relative pl-8 border-l-2 border-muted space-y-6">
+
+              {/* Timeline Items */}
+              <div className="relative pl-7 border-l border-blue-100 space-y-5">
                 {items.map((prescription: Prescription & { medicines: Medicine[], family_profiles: FamilyProfile }) => (
-                  <div key={prescription.id} className="relative">
-                    {/* Timeline dot */}
-                    <div className="absolute -left-[2.55rem] top-1 h-4 w-4 rounded-full bg-primary border-2 border-background" />
-                    
-                    <Card className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
+                  <div key={prescription.id} className="relative group">
+                    <div className="absolute -left-7.5 top-4 h-3 w-3 rounded-full bg-blue-500 border-2 border-[#fcfbf8] shadow-sm" />
+                    <Card className="bg-white border-slate-100 rounded-[1.5rem] shadow-sm hover:shadow-md transition-all overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                            <Avatar className="h-9 w-9 rounded-xl">
+                              <AvatarFallback className="rounded-xl bg-blue-50 text-blue-600 text-xs font-bold">
                                 {prescription.family_profiles.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <CardTitle className="text-base">{prescription.family_profiles.name}</CardTitle>
-                              <CardDescription className="flex items-center gap-2">
+                              <p className="font-semibold text-sm text-slate-900">{prescription.family_profiles.name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                                 <IconStethoscope className="h-3 w-3" />
                                 {prescription.attending_doctor || 'Unknown Doctor'}
-                                {prescription.hospital_name && ` • ${prescription.hospital_name}`}
-                              </CardDescription>
+                                {prescription.hospital_name && ` · ${prescription.hospital_name}`}
+                              </p>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {prescription.visit_date 
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {prescription.visit_date
                               ? new Date(prescription.visit_date).toLocaleDateString()
-                              : 'No date'
-                            }
-                          </div>
+                              : 'No date'}
+                          </span>
                         </div>
-                      </CardHeader>
-                      <CardContent>
+
                         {prescription.diagnosis && (
-                          <p className="text-sm mb-3">
-                            <span className="font-medium">Diagnosis:</span>{' '}
-                            {prescription.diagnosis}
+                          <p className="text-sm text-slate-700 mb-3">
+                            <span className="font-semibold">Diagnosis: </span>{prescription.diagnosis}
                           </p>
                         )}
 
                         {prescription.medicines && prescription.medicines.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-3">
-                            {prescription.medicines.slice(0, 4).map((medicine: Medicine) => (
-                              <Badge key={medicine.id} variant="outline" className="font-normal">
-                                <IconPill className="h-3 w-3 mr-1" />
-                                {medicine.name}
+                          <div className="flex flex-wrap gap-1.5 mb-4">
+                            {prescription.medicines.slice(0, 4).map((m: Medicine) => (
+                              <Badge key={m.id} variant="outline" className="rounded-full text-[10px] font-medium gap-1 border-slate-200">
+                                <IconPill className="h-3 w-3" /> {m.name}
                               </Badge>
                             ))}
                             {prescription.medicines.length > 4 && (
-                              <Badge variant="secondary">
+                              <Badge variant="secondary" className="rounded-full text-[10px]">
                                 +{prescription.medicines.length - 4} more
                               </Badge>
                             )}
                           </div>
                         )}
 
-                        <Link
-                          href={`/dashboard/prescriptions/${prescription.id}`}
-                          className="text-sm text-primary hover:underline"
-                        >
+                        <Link href={`/dashboard/prescriptions/${prescription.id}`}
+                          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider">
                           View details →
                         </Link>
                       </CardContent>
@@ -200,16 +169,11 @@ export default async function TimelinePage({ searchParams }: PageProps) {
 
 function groupByDate(prescriptions: (Prescription & { medicines: Medicine[], family_profiles: FamilyProfile })[]): Record<string, (Prescription & { medicines: Medicine[], family_profiles: FamilyProfile })[]> {
   const grouped: Record<string, (Prescription & { medicines: Medicine[], family_profiles: FamilyProfile })[]> = {}
-  
   for (const prescription of prescriptions) {
     const date = prescription.visit_date ? new Date(prescription.visit_date) : new Date(prescription.created_at)
     const yearMonth = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-    
-    if (!grouped[yearMonth]) {
-      grouped[yearMonth] = []
-    }
+    if (!grouped[yearMonth]) grouped[yearMonth] = []
     grouped[yearMonth].push(prescription)
   }
-  
   return grouped
 }
