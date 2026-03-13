@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  const isDevelopment = process.env.NODE_ENV === 'development'
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -41,16 +42,40 @@ export async function updateSession(request: NextRequest) {
   const authRoutes = ['/login', '/register']
   const isAuthRoute = authRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   
+  if (isDevelopment && request.nextUrl.pathname === '/') {
+    const dashboardUrl = request.nextUrl.clone()
+    dashboardUrl.pathname = '/dashboard'
+    return NextResponse.redirect(dashboardUrl)
+  }
+
+  if (isDevelopment && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return supabaseResponse
+  }
+
   // If user is logged in and trying to access an auth route, redirect to dashboard
   if (user && isAuthRoute) {
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    const dashboardUrl = request.nextUrl.clone()
+    dashboardUrl.pathname = '/dashboard'
+    
+    // Force HTTPS in production
+    if (!dashboardUrl.host.includes('localhost')) {
+      dashboardUrl.protocol = 'https:'
+    }
+    
+    return NextResponse.redirect(dashboardUrl)
   }
 
   // If user is not logged in and trying to access a protected route (dashboard), redirect to login
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    
+    // Force HTTPS in production
+    if (!loginUrl.host.includes('localhost')) {
+      loginUrl.protocol = 'https:'
+    }
+    
+    return NextResponse.redirect(loginUrl)
   }
 
   return supabaseResponse

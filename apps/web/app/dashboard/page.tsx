@@ -33,39 +33,49 @@ export default async function DashboardPage() {
   const activeKeyCount = activeKeys?.length ?? 0
 
   return (
-    <div className="p-6 md:p-10 space-y-12 max-w-7xl mx-auto">
-      <div className="flex flex-col gap-1.5 mt-2">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-          Clinical Overview
-        </h1>
-        <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-slate-400">
-          Integrated Health Management
+    <div className="p-8 md:p-12 space-y-16 max-w-7xl mx-auto selection:bg-blue-50">
+      <div className="flex flex-col gap-6 mt-2">
+        <div className="flex flex-col gap-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/50 backdrop-blur-md border border-blue-100/50 w-fit text-blue-600">
+            <span className="text-[12px] font-bold tracking-widest uppercase">Overview</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tight leading-none">
+            Clinical <span className="font-serif italic font-medium">Overview</span>
+          </h1>
+          {/* Clean Gradient Divider */}
+          <div className="w-16 h-1 rounded-full bg-linear-to-r from-blue-500 to-indigo-500 opacity-80" />
+        </div>
+        <p className="text-[13px] font-medium text-slate-400 max-w-2xl leading-relaxed">
+          Integrated health management interface for clinical precision and patient data integrity.
         </p>
       </div>
 
       {/* Stats Grid - Apple Style Widgets */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          { title: "Profiles", value: profileCount, label: profileCount === 1 ? 'Active Profile' : 'Active Profiles', icon: IconUsers, accent: "text-blue-600", bg: "bg-blue-50/40" },
-          { title: "Archives", value: prescriptionCount, label: "Medical Artifacts", icon: IconFiles, accent: "text-indigo-600", bg: "bg-indigo-50/40" },
-          { title: "Active Keys", value: activeKeyCount, label: "Temporary Access", icon: IconKey, accent: "text-sky-600", bg: "bg-sky-50/40" }
+          { title: "Profiles", value: profileCount, label: profileCount === 1 ? 'Authorized Profile' : 'Authorized Profiles', icon: IconUsers, accent: "text-blue-600", bg: "bg-blue-50/50" },
+          { title: "Archives", value: prescriptionCount, label: "Digital Artifacts", icon: IconFiles, accent: "text-indigo-600", bg: "bg-indigo-50/50" },
+          { title: "Active Keys", value: activeKeyCount, label: "Temporary Access", icon: IconKey, accent: "text-sky-600", bg: "bg-sky-50/50" }
         ].map((stat, i) => (
           <div key={i} className="group relative">
-            <Card className="relative bg-white border-slate-200/50 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <Card className="relative bg-white border-slate-200/40 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/20 hover:-translate-y-1 transition-all duration-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-7">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   {stat.title}
                 </span>
-                <div className={cn("p-2 rounded-xl", stat.bg)}>
-                   <stat.icon className={cn("h-4 w-4", stat.accent)} />
+                <div className={cn("p-2.5 rounded-2xl backdrop-blur-md border border-slate-100/50", stat.bg)}>
+                   <stat.icon className={cn("h-4.5 w-4.5", stat.accent)} />
                 </div>
               </CardHeader>
-              <CardContent className="pt-2">
-                <div className="text-4xl font-bold text-slate-900 tracking-tight">{stat.value}</div>
-                <p className="text-[11px] font-medium text-slate-400 mt-1 uppercase tracking-tight">
+              <CardContent className="pb-8 pt-4 px-7">
+                <div className="text-5xl font-bold text-slate-900 tracking-tighter">{stat.value}</div>
+                <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-none">
                   {stat.label}
                 </p>
               </CardContent>
+              {/* Subtle accent glow */}
+              <div className={cn("absolute bottom-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity", 
+                stat.accent.replace('text-', 'bg-'))} />
             </Card>
           </div>
         ))}
@@ -130,16 +140,16 @@ export default async function DashboardPage() {
             <CardContent className="p-0">
               {prescriptionCount === 0 ? (
                 <div className="p-16 text-center flex flex-col items-center gap-5">
-                  <div className="w-20 h-20 rounded-[2rem] bg-blue-50/50 flex items-center justify-center border border-dashed border-blue-200/50 relative overflow-hidden group">
-                    <IconPrescription className="w-10 h-10 text-blue-300 group-hover:scale-110 transition-transform" />
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-blue-50/50 flex items-center justify-center border border-dashed border-blue-200/50 relative overflow-hidden group">
+                    <IconPrescription className="w-12 h-12 text-blue-300 group-hover:scale-110 transition-transform" />
                     <div className="absolute inset-0 bg-linear-to-tr from-blue-500/5 to-transparent" />
                   </div>
                   <div>
-                    <p className="font-bold text-lg text-slate-900">No records found</p>
-                    <p className="text-[11px] text-slate-400 mt-1 font-medium max-w-[200px] mx-auto uppercase tracking-tight">Your digital medical vault is empty</p>
+                    <h4 className="font-bold text-xl text-slate-900">No artifacts found</h4>
+                    <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-[0.15em] max-w-[200px] mx-auto leading-relaxed">Your digital medical vault is currently empty</p>
                   </div>
-                  <Button asChild className="mt-4 rounded-full px-10 h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95">
-                    <Link href="/dashboard/prescriptions/upload">Start Archive</Link>
+                  <Button asChild className="mt-4 rounded-full px-12 h-12 bg-black hover:bg-zinc-900 text-white font-bold shadow-xl shadow-slate-200 transition-all hover:scale-105 active:scale-95">
+                    <Link href="/dashboard/prescriptions/upload">Index Archive</Link>
                   </Button>
                 </div>
               ) : (

@@ -10,11 +10,11 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  // Use the Host header to construct the correct redirect URL
-  // This avoids the 0.0.0.0 issue when Next.js binds to all interfaces
-  const host = request.headers.get('host') || 'localhost:3000'
-  const protocol = request.headers.get('x-forwarded-proto') || 'http'
-  const redirectUrl = `${protocol}://${host}/dashboard`
+  // Prefer an explicit canonical app URL so redirects stay stable across
+  // localhost, LAN IPs, reverse proxies, and production domains.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  const origin = siteUrl || requestUrl.origin
+  const redirectUrl = new URL('/dashboard', origin)
 
   return NextResponse.redirect(redirectUrl)
 }

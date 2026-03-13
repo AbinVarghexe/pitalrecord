@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { MarketingNavbar } from '@/components/marketing-navbar'
 import { HowItWorksSection } from '@/components/how-it-works-section'
 import { FeaturesSection } from '@/components/features-section'
@@ -8,6 +9,10 @@ import { MarketingFooter } from '@/components/marketing-footer'
 
 
 export default function Page() {
+  if (process.env.NODE_ENV === 'development') {
+    redirect('/dashboard')
+  }
+
   return (
     <>
       <style>{`
