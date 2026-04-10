@@ -53,16 +53,30 @@ export async function uploadPrescription(formData: FormData) {
 
   if (dbError) {
     console.error('Error saving prescription record:', dbError)
-    await supabase.storage.from('prescriptions').remove([storageData.path])
+    const { error: cleanupError } = await supabase.storage
+      .from('prescriptions')
+      .remove([storageData.path])
+    if (cleanupError) {
+      console.error('Failed to cleanup uploaded file after DB failure:', cleanupError)
+    }
     return { error: 'Failed to create prescription record' }
   }
 
   triggerPrescriptionAIProcessing({
     prescriptionId: prescription.id,
-    profileId,
     fileUrl: storageData.path,
-  }).catch((error) => {
+  }).catch(async (error) => {
     console.error('AI processing trigger failed:', error)
+    await supabase
+      .from('prescriptions')
+      .update({
+        extraction_status: 'failed',
+        extraction_data: {
+          error: error instanceof Error ? error.message : String(error),
+          context: 'triggerPrescriptionAIProcessing',
+        },
+      })
+      .eq('id', prescription.id)
   })
 
   revalidatePath('/dashboard')

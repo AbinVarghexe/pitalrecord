@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 
 type TriggerAIInput = {
   prescriptionId: string
-  profileId: string
   fileUrl: string
 }
 
@@ -18,7 +17,11 @@ export async function triggerPrescriptionAIProcessing(input: TriggerAIInput) {
       .from('prescriptions')
       .update({
         extraction_status: 'failed',
-        extraction_data: { error: error.message },
+        extraction_data: {
+          error: error.message,
+          name: error.name,
+          context: 'supabase.functions.invoke(process-prescription)',
+        },
       })
       .eq('id', input.prescriptionId)
   }

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import {
+  ALLOWED_ACCESS_DURATIONS,
   generateRawAccessKey,
   hashAccessKey,
   isAllowedAccessDuration,
@@ -32,8 +33,11 @@ export async function generateDoctorAccessKey(formData: FormData) {
   }
 
   if (!isAllowedAccessDuration(durationHours)) {
+    const formattedDurations = ALLOWED_ACCESS_DURATIONS.map((duration) =>
+      duration < 1 ? `${duration * 60} minutes` : `${duration} hour${duration > 1 ? 's' : ''}`
+    ).join(', ')
     return {
-      error: 'Duration must be 30 minutes, 1 hour, or 2 hours',
+      error: `Duration must be one of: ${formattedDurations}`,
       key: null,
     }
   }
