@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-function isAllowedRedirectHost(host: string, requestUrl: URL): boolean {
+function isAllowedRedirectHost(host: string): boolean {
   const normalizedHost = host.trim().toLowerCase()
   if (!normalizedHost) return false
 
@@ -17,8 +17,6 @@ function isAllowedRedirectHost(host: string, requestUrl: URL): boolean {
     }
   }
 
-  const requestHost = requestUrl.host.trim().toLowerCase()
-  if (requestHost === normalizedHost) return true
   if (normalizedHost === 'localhost' || normalizedHost.startsWith('localhost:')) return true
   if (normalizedHost === '127.0.0.1' || normalizedHost.startsWith('127.0.0.1:')) return true
   if (normalizedHost.endsWith('.vercel.app')) return true
@@ -26,7 +24,7 @@ function isAllowedRedirectHost(host: string, requestUrl: URL): boolean {
   return false
 }
 
-async function resolveCanonicalOrigin(requestUrl: URL): Promise<string> {
+async function resolveRedirectOrigin(requestUrl: URL): Promise<string> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
   if (siteUrl) {
     try {
@@ -38,9 +36,12 @@ async function resolveCanonicalOrigin(requestUrl: URL): Promise<string> {
 
   const requestHeaders = await headers()
   const forwardedHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
-  if (forwardedHost && isAllowedRedirectHost(forwardedHost, requestUrl)) {
+  if (forwardedHost && isAllowedRedirectHost(forwardedHost)) {
+    const headerProto = requestHeaders.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase()
     const forwardedProto =
-      requestHeaders.get('x-forwarded-proto') || (forwardedHost.includes('localhost') ? 'http' : 'https')
+      headerProto === 'http' || headerProto === 'https'
+        ? headerProto
+        : requestUrl.protocol.replace(':', '') || (forwardedHost.includes('localhost') ? 'http' : 'https')
     return `${forwardedProto}://${forwardedHost}`
   }
 
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  const origin = await resolveCanonicalOrigin(requestUrl)
+  const origin = await resolveRedirectOrigin(requestUrl)
   const redirectUrl = new URL('/dashboard', origin)
 
   return NextResponse.redirect(redirectUrl)
