@@ -82,7 +82,7 @@ export async function uploadPrescription(formData: FormData) {
   revalidatePath('/dashboard')
   revalidatePath(`/profiles/${profileId}`)
 
-  return { data: prescription, error: null }
+  return { data: prescription, error: null, extractionStatus: 'processing' as const }
 }
 
 export async function deletePrescription(id: string) {

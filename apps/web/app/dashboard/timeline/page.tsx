@@ -39,6 +39,11 @@ export default async function TimelinePage({ searchParams }: PageProps) {
   if (params.profile) query = query.eq('profile_id', params.profile)
   if (params.from)    query = query.gte('visit_date', params.from)
   if (params.to)      query = query.lte('visit_date', params.to)
+  if (params.q) {
+    query = query.or(
+      `attending_doctor.ilike.%${params.q}%,hospital_name.ilike.%${params.q}%,raw_text.ilike.%${params.q}%`
+    )
+  }
   const { data: prescriptions } = await query
   const filteredPrescriptions =
     params.q && prescriptions

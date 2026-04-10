@@ -22,7 +22,11 @@ export async function generateDoctorAccessKey(formData: FormData) {
 
   const profileId = formData.get('profileId') as string
   const scope = formData.get('scope') as 'read' | 'read_write'
-  const durationHours = Number(formData.get('duration') || '1')
+  const rawDuration = formData.get('duration')
+  if (rawDuration === null) {
+    return { error: 'Missing required fields', key: null }
+  }
+  const durationHours = Number(rawDuration)
 
   if (!profileId || !scope || Number.isNaN(durationHours)) {
     return { error: 'Missing required fields', key: null }
