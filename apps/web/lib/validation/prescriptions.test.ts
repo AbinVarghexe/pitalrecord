@@ -10,8 +10,9 @@ function mockFile({
   type: string
   size: number
 }): File {
-  const content = 'x'.repeat(Math.max(1, Math.floor(size / 2)))
-  return new File([content, content], name, { type })
+  const bytes = new Uint8Array(size)
+  bytes.fill(120) // 'x'
+  return new File([bytes], name, { type })
 }
 
 describe('prescription upload validation', () => {
