@@ -9,8 +9,9 @@ import Link from 'next/link'
 import { TimelineSearch } from './timeline-search'
 import type { Prescription, Medicine, FamilyProfile } from '@/lib/supabase/types'
 
-function matchesSearchTerm(value: string | null | undefined, query: string) {
-  return (value || '').toLowerCase().includes(query.toLowerCase())
+function matchesSearchTerm(value: string | null | undefined, query: string | undefined) {
+  if (!query) return false
+  return (value || '').toLowerCase().includes(query)
 }
 
 export const metadata: Metadata = {
@@ -45,10 +46,10 @@ export default async function TimelinePage({ searchParams }: PageProps) {
     )
   }
   const { data: prescriptions } = await query
+  const normalizedQuery = params.q?.toLowerCase() ?? ''
   const filteredPrescriptions =
     params.q && prescriptions
       ? prescriptions.filter((prescription) => {
-          const normalizedQuery = params.q!.toLowerCase()
           const attendingDoctorMatch = matchesSearchTerm(prescription.attending_doctor, normalizedQuery)
           const hospitalMatch = matchesSearchTerm(prescription.hospital_name, normalizedQuery)
           const rawTextMatch = matchesSearchTerm(prescription.raw_text, normalizedQuery)

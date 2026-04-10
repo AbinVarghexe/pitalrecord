@@ -36,7 +36,7 @@ export async function createProfile(formData: FormData) {
     .is('deleted_at', null)
 
   if ((activeProfileCount || 0) >= 10) {
-    return { error: 'A maximum of 10 active family profiles is allowed' }
+    return { error: 'You have reached the maximum of 10 active family profiles' }
   }
 
   const name = formData.get('name') as string
