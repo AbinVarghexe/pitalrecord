@@ -5,7 +5,7 @@ This guide explains how to deploy PitalRecord with Vercel using the repository C
 ## Architecture Overview
 
 ```
-GitHub (source) -> GitHub Actions (CI) -> Vercel (hosting)
+GitHub (source) -> GitHub Actions (lint/typecheck/test/build) -> Vercel (preview/production hosting)
 ```
 
 ## Prerequisites

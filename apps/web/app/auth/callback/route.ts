@@ -13,7 +13,7 @@ async function resolveCanonicalOrigin(requestUrl: URL): Promise<string> {
   }
 
   const requestHeaders = await headers()
-  const forwardedHost = requestHeaders.get('host') || requestHeaders.get('x-forwarded-host')
+  const forwardedHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
   if (forwardedHost) {
     const forwardedProto =
       requestHeaders.get('x-forwarded-proto') || (forwardedHost.includes('localhost') ? 'http' : 'https')
