@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
-import { IconHistory, IconEye, IconLogin, IconLogout, IconKey } from '@tabler/icons-react'
+import { IconHistory, IconEye, IconLogin, IconLogout, IconKey, IconPill } from '@tabler/icons-react'
 
 export async function AccessLogsCard() {
   const supabase = await createClient()
@@ -49,19 +49,25 @@ export async function AccessLogsCard() {
       )
     `)
     .in('doctor_access_keys.profile_id', profileIds)
-    .order('created_at', { ascending: false })
+    .order('timestamp', { ascending: false })
     .limit(10)
 
   const actionIcons: Record<string, typeof IconEye> = {
-    session_started: IconLogin,
-    viewed_profile: IconEye,
-    session_ended: IconLogout,
+    key_used: IconLogin,
+    record_viewed: IconEye,
+    records_viewed: IconEye,
+    rx_added: IconPill,
+    prescription_added: IconPill,
+    key_revoked: IconLogout,
   }
 
   const actionLabels: Record<string, string> = {
-    session_started: 'Session Started',
-    viewed_profile: 'Viewed Profile',
-    session_ended: 'Session Ended',
+    key_used: 'Key Used',
+    record_viewed: 'Record Viewed',
+    records_viewed: 'Records Viewed',
+    rx_added: 'Prescription Added',
+    prescription_added: 'Prescription Added',
+    key_revoked: 'Key Revoked',
   }
 
   return (
@@ -107,7 +113,7 @@ export async function AccessLogsCard() {
                       {log.doctor_access_keys?.scope === 'read_write' ? 'R/W' : 'Read'}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(log.created_at).toLocaleString()}
+                      {new Date(log.timestamp).toLocaleString()}
                     </p>
                   </div>
                 </div>

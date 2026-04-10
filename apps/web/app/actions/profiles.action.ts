@@ -29,6 +29,16 @@ export async function createProfile(formData: FormData) {
     return { error: 'Unauthorized' }
   }
 
+  const { count: activeProfileCount } = await supabase
+    .from('family_profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+
+  if ((activeProfileCount || 0) >= 10) {
+    return { error: 'A maximum of 10 active family profiles is allowed' }
+  }
+
   const name = formData.get('name') as string
   const dob = formData.get('dob') as string
   const bloodGroup = formData.get('bloodGroup') as string | null

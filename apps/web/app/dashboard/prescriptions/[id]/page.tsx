@@ -19,7 +19,7 @@ import {
   IconAlertCircle
 } from '@tabler/icons-react'
 import { DeletePrescriptionButton } from './delete-prescription-button'
-import type { PrescriptionWithMedicines, FamilyProfile, Medicine } from '@/lib/supabase/types'
+import type { FamilyProfile, Medicine } from '@/lib/supabase/types'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -62,6 +62,12 @@ export default async function PrescriptionPage({ params }: PageProps) {
   }
 
   const profile = prescription.family_profiles as FamilyProfile
+
+  const { data: versions } = await supabase
+    .from('prescription_versions')
+    .select('id, version_number, created_at')
+    .eq('prescription_id', id)
+    .order('version_number', { ascending: false })
 
   return (
     <div className="space-y-6">
@@ -159,13 +165,18 @@ export default async function PrescriptionPage({ params }: PageProps) {
                 <CardTitle>Details</CardTitle>
                 <CardDescription>Extracted prescription information</CardDescription>
               </div>
-              {prescription.ai_confidence !== null && (
-                <Badge
-                  variant={prescription.ai_confidence > 0.8 ? 'default' : prescription.ai_confidence > 0.5 ? 'secondary' : 'outline'}
-                >
-                  {Math.round(prescription.ai_confidence * 100)}% AI Confidence
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {prescription.extraction_status || 'pending'}
                 </Badge>
-              )}
+                {prescription.ai_confidence !== null && (
+                  <Badge
+                    variant={prescription.ai_confidence > 0.8 ? 'default' : prescription.ai_confidence > 0.5 ? 'secondary' : 'outline'}
+                  >
+                    {Math.round(prescription.ai_confidence * 100)}% AI Confidence
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -283,6 +294,29 @@ export default async function PrescriptionPage({ params }: PageProps) {
               <div className="text-center py-8 text-muted-foreground">
                 <p>No medicines extracted yet.</p>
                 <p className="text-sm mt-1">Edit this prescription to add medicines manually.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Version History</CardTitle>
+            <CardDescription>Previous reviewed snapshots for this prescription</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!versions || versions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No versions yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {versions.map((version) => (
+                  <div key={version.id} className="rounded border p-3 text-sm flex justify-between">
+                    <span>Version {version.version_number}</span>
+                    <span className="text-muted-foreground">
+                      {new Date(version.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

@@ -1,6 +1,12 @@
 export type UserRole = 'patient' | 'doctor' | 'admin'
 export type KeyScope = 'read' | 'read_write'
-export type AccessAction = 'key_used' | 'record_viewed' | 'rx_added' | 'key_revoked'
+export type AccessAction =
+  | 'key_used'
+  | 'record_viewed'
+  | 'records_viewed'
+  | 'rx_added'
+  | 'prescription_added'
+  | 'key_revoked'
 
 export interface User {
   id: string
@@ -35,6 +41,10 @@ export interface Prescription {
   diagnosis: string[] | null
   raw_text: string | null
   ai_confidence: number | null
+  extraction_status: 'pending' | 'processing' | 'completed' | 'failed'
+  extraction_data: Record<string, unknown> | null
+  follow_up_date: string | null
+  reviewed_at: string | null
   created_at: string
   deleted_at: string | null
   updated_at: string
@@ -72,6 +82,15 @@ export interface AccessLog {
   timestamp: string
 }
 
+export interface PrescriptionVersion {
+  id: string
+  prescription_id: string
+  version_number: number
+  changed_by: string | null
+  snapshot: Record<string, unknown>
+  created_at: string
+}
+
 // Prescription with medicines joined
 export interface PrescriptionWithMedicines extends Prescription {
   medicines: Medicine[]
@@ -98,7 +117,20 @@ export type Database = {
       }
       prescriptions: {
         Row: Prescription
-        Insert: Omit<Prescription, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>
+        Insert: {
+          profile_id: string
+          file_url: string
+          visit_date?: string | null
+          hospital_name?: string | null
+          attending_doctor?: string | null
+          diagnosis?: string[] | null
+          raw_text?: string | null
+          ai_confidence?: number | null
+          extraction_status?: 'pending' | 'processing' | 'completed' | 'failed'
+          extraction_data?: Record<string, unknown> | null
+          follow_up_date?: string | null
+          reviewed_at?: string | null
+        }
         Update: Partial<Omit<Prescription, 'id' | 'profile_id'>>
       }
       medicines: {
@@ -114,6 +146,11 @@ export type Database = {
       access_logs: {
         Row: AccessLog
         Insert: Omit<AccessLog, 'id' | 'timestamp'>
+        Update: never
+      }
+      prescription_versions: {
+        Row: PrescriptionVersion
+        Insert: Omit<PrescriptionVersion, 'id' | 'created_at'>
         Update: never
       }
     }
