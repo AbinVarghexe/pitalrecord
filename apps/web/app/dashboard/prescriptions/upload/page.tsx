@@ -5,6 +5,10 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { uploadPrescription } from '@/app/actions/prescriptions.action'
 import { getProfiles } from '@/app/actions/profiles.action'
+import {
+  ALLOWED_PRESCRIPTION_MIME_TYPES,
+  MAX_PRESCRIPTION_FILE_SIZE,
+} from '@/lib/validation/prescriptions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Button } from '@workspace/ui/components/button'
 import { Label } from '@workspace/ui/components/label'
@@ -12,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { IconArrowLeft, IconLoader2, IconUpload, IconFile, IconX, IconPhoto } from '@tabler/icons-react'
 import type { FamilyProfile } from '@/lib/supabase/types'
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'application/pdf']
+const MAX_FILE_SIZE = MAX_PRESCRIPTION_FILE_SIZE
+const ALLOWED_TYPES = ALLOWED_PRESCRIPTION_MIME_TYPES
 
 export default function UploadPrescriptionPage() {
   const router = useRouter()
@@ -53,7 +57,7 @@ export default function UploadPrescriptionPage() {
   }, [])
 
   const validateFile = (file: File): string | null => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_TYPES.has(file.type)) {
       return 'Invalid file type. Please upload JPEG, PNG, HEIC, or PDF files.'
     }
     if (file.size > MAX_FILE_SIZE) {

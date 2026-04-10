@@ -9,6 +9,11 @@ import Link from 'next/link'
 import { TimelineSearch } from './timeline-search'
 import type { Prescription, Medicine, FamilyProfile } from '@/lib/supabase/types'
 
+function matchesSearchTerm(value: string | null | undefined, query: string | undefined) {
+  if (!query) return false
+  return (value || '').toLowerCase().includes(query)
+}
+
 export const metadata: Metadata = {
   title: 'Medical Timeline - PitalRecord',
   description: 'View and search your medical history',
@@ -35,10 +40,35 @@ export default async function TimelinePage({ searchParams }: PageProps) {
   if (params.profile) query = query.eq('profile_id', params.profile)
   if (params.from)    query = query.gte('visit_date', params.from)
   if (params.to)      query = query.lte('visit_date', params.to)
-  if (params.q)       query = query.or(`attending_doctor.ilike.%${params.q}%,hospital_name.ilike.%${params.q}%,diagnosis.ilike.%${params.q}%,raw_text.ilike.%${params.q}%`)
-
+  if (params.q) {
+    query = query.or(
+      `attending_doctor.ilike.%${params.q}%,hospital_name.ilike.%${params.q}%,raw_text.ilike.%${params.q}%`
+    )
+  }
   const { data: prescriptions } = await query
-  const grouped = groupByDate(prescriptions || [])
+  const normalizedQuery = params.q?.toLowerCase() ?? ''
+  const filteredPrescriptions =
+    params.q && prescriptions
+      ? prescriptions.filter((prescription) => {
+          const attendingDoctorMatch = matchesSearchTerm(prescription.attending_doctor, normalizedQuery)
+          const hospitalMatch = matchesSearchTerm(prescription.hospital_name, normalizedQuery)
+          const rawTextMatch = matchesSearchTerm(prescription.raw_text, normalizedQuery)
+          const diagnosisMatch = (prescription.diagnosis || []).some((d: string) =>
+            d.toLowerCase().includes(normalizedQuery)
+          )
+          const medicineMatch = (prescription.medicines || []).some((m: Medicine) =>
+            m.name.toLowerCase().includes(normalizedQuery)
+          )
+          return (
+            attendingDoctorMatch ||
+            hospitalMatch ||
+            rawTextMatch ||
+            diagnosisMatch ||
+            medicineMatch
+          )
+        })
+      : prescriptions
+  const grouped = groupByDate(filteredPrescriptions || [])
 
   return (
     <div className="p-8 md:p-12 space-y-10 max-w-7xl mx-auto">
@@ -62,7 +92,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
       {(params.q || params.profile || params.from || params.to) && (
         <div className="flex items-center gap-2 text-[12px] text-slate-500 font-medium">
           <IconSearch className="h-3.5 w-3.5" />
-          Found {prescriptions?.length || 0} records
+          Found {filteredPrescriptions?.length || 0} records
           {params.q && <Badge variant="secondary" className="rounded-full text-[10px]">Search: {params.q}</Badge>}
           {params.profile && profiles && (
             <Badge variant="secondary" className="rounded-full text-[10px]">
@@ -73,7 +103,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
       )}
 
       {/* ── Timeline */}
-      {!prescriptions || prescriptions.length === 0 ? (
+      {!filteredPrescriptions || filteredPrescriptions.length === 0 ? (
         <Card className="bg-white/60 border-slate-200/40 rounded-[2rem]">
           <CardContent className="flex flex-col items-center justify-center py-16 gap-5">
             <div className="w-20 h-20 rounded-[2rem] bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">

@@ -2,78 +2,85 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-/**
- * Creates a SHA-256 hash of a string
- * Polyfill for edge environments where crypto might not be globally available in the same way
- */
-async function hashToken(token: string) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+import {
+  ALLOWED_ACCESS_DURATIONS,
+  generateRawAccessKey,
+  hashAccessKey,
+  isAllowedAccessDuration,
+  resolveAccessExpiry,
+} from '@/lib/security/doctor-access'
 
 export async function generateDoctorAccessKey(formData: FormData) {
   const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
     return { error: 'Unauthorized', key: null }
   }
 
   const profileId = formData.get('profileId') as string
   const scope = formData.get('scope') as 'read' | 'read_write'
-  const durationHours = parseInt(formData.get('duration') as string || '1', 10)
+  const rawDuration = formData.get('duration')
+  if (rawDuration === null) {
+    return { error: 'Missing required fields', key: null }
+  }
+  const durationHours = Number(rawDuration)
 
-  if (!profileId || !scope || isNaN(durationHours)) {
+  if (!profileId || !scope || Number.isNaN(durationHours)) {
     return { error: 'Missing required fields', key: null }
   }
 
-  // Generate a random access key
-  const randomBytes = new Uint8Array(32);
-  crypto.getRandomValues(randomBytes);
-  const rawKey = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  // Hash it for storage
-  const tokenHash = await hashToken(rawKey);
+  if (!['read', 'read_write'].includes(scope)) {
+    return { error: 'Invalid access scope', key: null }
+  }
 
-  // Calculate expiration
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + durationHours);
+  if (!isAllowedAccessDuration(durationHours)) {
+    const formattedDurations = ALLOWED_ACCESS_DURATIONS.map((duration) =>
+      duration < 1 ? `${duration * 60} minutes` : `${duration} hour${duration > 1 ? 's' : ''}`
+    ).join(', ')
+    return {
+      error: `Duration must be one of: ${formattedDurations}`,
+      key: null,
+    }
+  }
 
-  // Store the hashed key
-  const { error } = await supabase
-    .from('doctor_access_keys')
-    .insert({
-      profile_id: profileId,
-      token_hash: tokenHash,
-      scope: scope,
-      expires_at: expiresAt.toISOString(),
-      revoked: false
-    });
+  const rawKey = generateRawAccessKey()
+  const tokenHash = hashAccessKey(rawKey)
+  const expiresAt = resolveAccessExpiry(durationHours)
+
+  const { error } = await supabase.from('doctor_access_keys').insert({
+    profile_id: profileId,
+    token_hash: tokenHash,
+    scope,
+    expires_at: expiresAt,
+    revoked: false,
+  })
 
   if (error) {
     console.error('Error generating access key:', error)
     return { error: 'Failed to generate access key', key: null }
   }
 
-  // Revalidate the page so the user can see their new active key
   revalidatePath('/dashboard/access')
-
-  // Return the RAW key to the user (this is the ONLY time they will see it!)
   return { error: null, key: rawKey }
 }
 
 export async function revokeDoctorAccessKey(keyId: string) {
   const supabase = await createClient()
-  
+
+  const { data: key } = await supabase
+    .from('doctor_access_keys')
+    .select('profile_id')
+    .eq('id', keyId)
+    .single()
+
   const { error } = await supabase
     .from('doctor_access_keys')
     .update({
       revoked: true,
-      revoked_at: new Date().toISOString()
+      revoked_at: new Date().toISOString(),
     })
     .eq('id', keyId)
 
@@ -81,21 +88,29 @@ export async function revokeDoctorAccessKey(keyId: string) {
     return { error: 'Failed to revoke key' }
   }
 
+  await supabase.from('access_logs').insert({
+    access_key_id: keyId,
+    action: 'key_revoked',
+    ip_address: '127.0.0.1',
+    user_agent: 'patient-dashboard',
+  })
+
   revalidatePath('/dashboard/access')
+  if (key?.profile_id) {
+    revalidatePath(`/dashboard/profiles/${key.profile_id}`)
+  }
   return { error: null }
 }
 
 export async function validateDoctorAccessKey(rawKey: string) {
   const supabase = await createClient()
-  
+
   if (!rawKey || rawKey.length < 32) {
     return { error: 'Invalid access key format', sessionId: null }
   }
 
-  // Hash the provided key
-  const tokenHash = await hashToken(rawKey)
+  const tokenHash = hashAccessKey(rawKey)
 
-  // Look for matching, valid key
   const { data: key, error } = await supabase
     .from('doctor_access_keys')
     .select('*')
@@ -108,14 +123,12 @@ export async function validateDoctorAccessKey(rawKey: string) {
     return { error: 'Invalid or expired access key', sessionId: null }
   }
 
-  // Log the access
   await supabase.from('access_logs').insert({
-    key_id: key.id,
-    action: 'session_started',
-    ip_address: null, // Would need to get from request in middleware
-    user_agent: null
+    access_key_id: key.id,
+    action: 'key_used',
+    ip_address: '127.0.0.1',
+    user_agent: 'doctor-access-portal',
   })
 
-  // Return the key ID as the session identifier
   return { error: null, sessionId: key.id }
 }
