@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/componen
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
 import { Textarea } from '@workspace/ui/components/textarea'
+import type { Medicine } from '@/lib/supabase/types'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -62,7 +63,7 @@ export default async function EditPrescriptionPage({ params }: PageProps) {
   }
 
   const medicinesText = (prescription.medicines || [])
-    .map((medicine) =>
+    .map((medicine: Medicine) =>
       [
         medicine.name ?? '',
         medicine.dosage ?? '',
