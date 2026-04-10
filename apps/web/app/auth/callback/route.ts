@@ -2,6 +2,30 @@ import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+function isAllowedRedirectHost(host: string, requestUrl: URL): boolean {
+  const normalizedHost = host.trim().toLowerCase()
+  if (!normalizedHost) return false
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (siteUrl) {
+    try {
+      if (new URL(siteUrl).host.toLowerCase() === normalizedHost) {
+        return true
+      }
+    } catch {
+      // Ignore invalid NEXT_PUBLIC_SITE_URL and continue with safe defaults.
+    }
+  }
+
+  const requestHost = requestUrl.host.trim().toLowerCase()
+  if (requestHost === normalizedHost) return true
+  if (normalizedHost === 'localhost' || normalizedHost.startsWith('localhost:')) return true
+  if (normalizedHost === '127.0.0.1' || normalizedHost.startsWith('127.0.0.1:')) return true
+  if (normalizedHost.endsWith('.vercel.app')) return true
+
+  return false
+}
+
 async function resolveCanonicalOrigin(requestUrl: URL): Promise<string> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
   if (siteUrl) {
@@ -14,7 +38,7 @@ async function resolveCanonicalOrigin(requestUrl: URL): Promise<string> {
 
   const requestHeaders = await headers()
   const forwardedHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
-  if (forwardedHost) {
+  if (forwardedHost && isAllowedRedirectHost(forwardedHost, requestUrl)) {
     const forwardedProto =
       requestHeaders.get('x-forwarded-proto') || (forwardedHost.includes('localhost') ? 'http' : 'https')
     return `${forwardedProto}://${forwardedHost}`
