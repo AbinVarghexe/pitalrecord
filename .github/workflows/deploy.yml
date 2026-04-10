@@ -121,21 +121,34 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-  notify:
-    name: Deployment Notification
+  notify-preview:
+    name: Preview Deployment Notification
     runs-on: ubuntu-latest
-    needs: [build-and-test, deploy-preview, deploy-production]
-    if: always()
+    needs: [build-and-test, deploy-preview]
+    if: github.event_name == 'pull_request' && always()
 
     steps:
       - name: Deployment status
         run: |
-          if [ "${{ needs.deploy-production.result }}" == "success" ] || [ "${{ needs.deploy-preview.result }}" == "success" ]; then
-            echo "🎉 Deployment successful!"
-            echo "🚀 Deployed via Vercel"
-          elif [ "${{ needs.deploy-preview.result }}" == "skipped" ] && [ "${{ needs.deploy-production.result }}" == "skipped" ]; then
-            echo "⏭️ Deployment was skipped"
+          if [ "${{ needs.deploy-preview.result }}" == "success" ]; then
+            echo "🎉 Preview deployment successful!"
           else
-            echo "❌ Deployment failed"
+            echo "❌ Preview deployment failed"
+            exit 1
+          fi
+
+  notify-production:
+    name: Production Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [build-and-test, deploy-production]
+    if: github.event_name != 'pull_request' && always()
+
+    steps:
+      - name: Deployment status
+        run: |
+          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "🎉 Production deployment successful!"
+          else
+            echo "❌ Production deployment failed"
             exit 1
           fi
